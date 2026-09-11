@@ -102,7 +102,7 @@ public class AquariumSimulation : MonoBehaviour
         // Asegurar que la población de peces no sea negativa
         if (actualFish < 0) actualFish = 0;
 
-        // Representar visualmente el nuevo estado en Game View
+        
         DrawView();
 
         // Mostrar evolución del sistema en consola
