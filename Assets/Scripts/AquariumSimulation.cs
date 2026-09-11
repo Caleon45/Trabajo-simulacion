@@ -4,64 +4,51 @@ using UnityEngine;
 public class AquariumSimulation : MonoBehaviour
 {
     [Header("Condiciones Iniciales")]
-    // Variables iniciales fijas del ecosistema
     public int initialFish = 10;
     public float initialAlgae = 5f;
 
     [Header("Variables en Ejecución")]
-    // Variables dinámicas que cambian durante la ejecución
     public int actualFish;
     public float actualAlgae;
     public int minute = 0;
 
     [Header("Parámetros del Modelo")]
-    // Tasas y reglas del modelo matemático
-    public float consumptionRate = 0.1f;    // Lambda: kg que consume cada pez por minuto
-    public float growthRate = 0.5f;         // G(t): kg de crecimiento natural de algas por minuto
-    public float algaeThreshold = 1.0f;     // Umbral crítico de algas
-    public int fishAddedInterval = 5;       // Cada cuántos minutos se agregan peces
-    public int fishAddedAmount = 2;         // Cuántos peces agrega el cuidador
+    public float consumptionRate = 0.1f;
+    public float growthRate = 0.5f;
+    public float algaeThreshold = 1.0f;
+    public int fishAddedInterval = 5;
+    public int fishAddedAmount = 2;
 
     [Header("Control de Tiempo")]
-    // Velocidad de simulación (en segundos por minuto simulado)
     public float secondsPerMinute = 2.0f;
     private float timer = 0f;
 
     [Header("Visual View (Game View)")]
-    // Prefabs opcionales y área del acuario
     public GameObject fishPrefab;
     public GameObject algaePrefab;
     public Transform aquariumArea;
 
-    // Listas para almacenar y gestionar los objetos visuales
     private List<GameObject> fishObjects = new List<GameObject>();
     private List<GameObject> algaeObjects = new List<GameObject>();
 
-    // Sprites procedurales reutilizables
     private Sprite defaultFishSprite;
     private Sprite defaultAlgaeSprite;
     private Sprite defaultBgSprite;
 
     void Start()
     {
-        // Definir condiciones iniciales
         actualFish = initialFish;
         actualAlgae = initialAlgae;
         minute = 0;
 
-        // Dibujar el ecosistema inicial en Game View
         DrawView();
-
-        // Mostrar condiciones iniciales en consola
         Debug.Log($"[Inicio] Minuto {minute}: {actualFish} peces | {actualAlgae:F2} kg de algas");
     }
 
     void Update()
     {
-        // Controlar el paso del tiempo
         timer += Time.deltaTime;
 
-        // Llamar a la función de simulación al cumplirse el minuto
         if (timer >= secondsPerMinute)
         {
             timer = 0f;
@@ -71,44 +58,36 @@ public class AquariumSimulation : MonoBehaviour
 
     void Simulate()
     {
-        // Avanzar el tiempo minuto a minuto
         minute++;
 
-        // Crecimiento natural de algas
+        // Crecimiento y consumo de algas
         actualAlgae += growthRate;
-
-        // Consumo de algas por peces (solo comen lo que hay disponible)
         float wantedConsumption = actualFish * consumptionRate;
         float actualConsumption = Mathf.Min(wantedConsumption, actualAlgae);
         actualAlgae -= actualConsumption;
 
-        // Asegurar que las algas nunca sean negativas
         if (actualAlgae < 0f) actualAlgae = 0f;
 
-        // Mortalidad: si las algas bajan del umbral crítico muere 1 pez
+        // Mortalidad por falta de alimento
         if (actualAlgae < algaeThreshold && actualFish > 0)
         {
             actualFish--;
             Debug.Log($"[Alerta] Minuto {minute}: Algas críticas ({actualAlgae:F2} kg < {algaeThreshold} kg). Muere 1 pez.");
         }
 
-        // Incorporación: cada 5 minutos el cuidador agrega peces
+        // Incorporación de peces cada 5 minutos
         if (minute % fishAddedInterval == 0)
         {
             actualFish += fishAddedAmount;
             Debug.Log($"[Cuidador] Minuto {minute}: Múltiplo de {fishAddedInterval}. Se agregaron {fishAddedAmount} peces.");
         }
 
-        // Asegurar que la población de peces no sea negativa
         if (actualFish < 0) actualFish = 0;
 
-        
         DrawView();
 
-        // Mostrar evolución del sistema en consola
         Debug.Log($"Minuto {minute}: {actualFish} peces | {actualAlgae:F2} kg de algas (Consumo: {actualConsumption:F2} kg)");
 
-        // Verificar extinción de peces
         if (actualFish <= 0)
         {
             Debug.Log($"[Fin] Minuto {minute}: Todos los peces han muerto. Las algas comenzarán a recuperarse.");
@@ -117,22 +96,19 @@ public class AquariumSimulation : MonoBehaviour
 
     void DrawView()
     {
-        // Limpiar objetos visuales anteriores de peces
+        // Limpiar objetos previos
         foreach (GameObject fish in fishObjects)
         {
             if (fish != null) Destroy(fish);
         }
-
-        // Limpiar objetos visuales anteriores de algas
         foreach (GameObject algae in algaeObjects)
         {
             if (algae != null) Destroy(algae);
         }
-
         fishObjects.Clear();
         algaeObjects.Clear();
 
-        // Generar o vincular el escenario del acuario (fondo azul marino)
+        // Escenario del acuario
         if (aquariumArea == null)
         {
             GameObject existingArea = GameObject.Find("AquariumArea");
@@ -167,7 +143,7 @@ public class AquariumSimulation : MonoBehaviour
         float floorY = aquariumArea.position.y - halfH;
         float ceilingY = aquariumArea.position.y + halfH;
 
-        // Generar sprite circular verde para algas si no existe
+        // Sprites por defecto si no se asignaron prefabs
         if (algaePrefab == null && defaultAlgaeSprite == null)
         {
             Texture2D circleTex = new Texture2D(32, 32);
@@ -187,7 +163,6 @@ public class AquariumSimulation : MonoBehaviour
             defaultAlgaeSprite = Sprite.Create(circleTex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
         }
 
-        // Generar sprite triangular cian para peces si no existe
         if (fishPrefab == null && defaultFishSprite == null)
         {
             Texture2D triTex = new Texture2D(32, 32);
@@ -208,7 +183,7 @@ public class AquariumSimulation : MonoBehaviour
             defaultFishSprite = Sprite.Create(triTex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
         }
 
-        // Dibujar algas: círculos verdes creciendo desde el fondo hacia arriba
+        // Dibujar algas desde el fondo hacia arriba
         if (actualAlgae > 0f)
         {
             int algaeCircles = Mathf.RoundToInt(actualAlgae / 0.5f);
@@ -240,7 +215,7 @@ public class AquariumSimulation : MonoBehaviour
             }
         }
 
-        // Dibujar peces: triángulos cian nadando en aguas abiertas (por encima de las algas)
+        // Dibujar peces sobre el nivel del piso
         float minFishY = floorY + 2.3f;
         float maxFishY = ceilingY - 0.7f;
 
@@ -271,3 +246,5 @@ public class AquariumSimulation : MonoBehaviour
         }
     }
 }
+
+// Nota: Asistencia de IA utilizada únicamente para la estructuración parcial del código.
